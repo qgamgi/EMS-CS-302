@@ -54,19 +54,24 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-var allowedOrigins = builder.Configuration
-    .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? Array.Empty<string>();
-
+// Flutter web runs on a random high port (e.g. localhost:53920), so we allow
+// any localhost/127.0.0.1 origin in development. In production, replace
+// SetIsOriginAllowed with a strict WithOrigins() list.
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
         policy
-            .WithOrigins(allowedOrigins)
+            .SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin)) return false;
+                var uri = new Uri(origin);
+                // Allow any port on localhost / 127.0.0.1 for local dev
+                return uri.Host is "localhost" or "127.0.0.1";
+            })
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials(); // Required for SignalR
+            .AllowCredentials(); // Required for SignalR WebSocket
     });
 });
 
@@ -114,15 +119,26 @@ builder.Services.AddSwaggerGen(c =>
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Swagger available in all environments (gate behind auth or restrict to non-prod as needed)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EMS API v1");
+    c.RoutePrefix = "swagger";
+});
 
+// Middleware order matters for CORS:
+// UseRouting → UseCors → UseAuthentication → UseAuthorization → endpoints
+// UseCors must be after UseRouting so it can inspect the matched endpoint,
+// and before UseAuthentication so OPTIONS preflight requests are not rejected
+// with a 401 before the CORS headers are written.
+app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Minimal liveness probe — used by Docker health check
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "EMS.API" }));
 
 app.MapControllers();
 app.MapHub<DispatchHub>("/hubs/dispatch");

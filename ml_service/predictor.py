@@ -6,6 +6,7 @@ The original predict_hospital.py is left untouched.
 
 from __future__ import annotations
 
+import os
 import pickle
 import time
 from math import atan2, cos, radians, sin, sqrt
@@ -16,10 +17,14 @@ import pandas as pd
 import requests
 
 
-# ─── Paths (relative to repo root, resolved at runtime) ──────────────────────
+# ─── Paths ────────────────────────────────────────────────────────────────────
+# Prefer explicit env vars (set in Dockerfile / docker-compose).
+# Fall back to paths relative to the repo root so the service also works when
+# run directly with `uvicorn` outside Docker (e.g. during local development).
 _REPO_ROOT = Path(__file__).resolve().parent.parent
-MODELS_DIR = _REPO_ROOT / "models"
-DATASETS_DIR = _REPO_ROOT / "datasets" / "hospital"
+
+MODELS_DIR = Path(os.environ.get("MODELS_DIR", str(_REPO_ROOT / "models")))
+DATASETS_DIR = Path(os.environ.get("DATASETS_DIR", str(_REPO_ROOT / "datasets" / "hospital")))
 HOSPITAL_CSV = DATASETS_DIR / "hospital_dataset (cleaned).csv"
 
 

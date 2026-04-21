@@ -1,7 +1,5 @@
-version: "3.9"
-
 services:
-  # MongoDB Database
+  # MongoDB Database (no authentication — for local development)
   mongodb:
     image: mongo:7
     container_name: ems-mongodb
@@ -9,9 +7,7 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
-      MONGO_INITDB_DATABASE: ems_dispatch
+      MONGO_INITDB_DATABASE: ems_db
     volumes:
       - mongodb_data:/data/db
       - ./scripts:/docker-entrypoint-initdb.d:ro
@@ -26,6 +22,7 @@ services:
   # FastAPI ML Service
   ml-service:
     build:
+      # context is the ml_service folder; the Dockerfile copies from "." (that folder)
       context: ./ml_service
       dockerfile: Dockerfile
     container_name: ems-ml-service
@@ -33,17 +30,23 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MODEL_PATH=/app/models/hospital_model.joblib
+      - MODELS_DIR=/app/models
+      - DATASETS_DIR=/app/datasets/hospital
+      - ORS_API_KEY=${ORS_API_KEY:-}
       - LOG_LEVEL=INFO
     volumes:
+      # Bind-mount artifacts from the host so the container uses the latest files
+      # without needing to rebuild the image when models are retrained.
       - ./models:/app/models:ro
+      - ./datasets:/app/datasets:ro
     networks:
       - ems-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 30s
 
   # ASP.NET Core Backend API
   backend:
@@ -57,7 +60,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__MongoDB=mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/ems_dispatch?authSource=admin
+      - ConnectionStrings__MongoDB=mongodb://mongodb:27017/ems_db
       - Jwt__Key=${JWT_SECRET:-your-super-secret-key-at-least-32-chars}
       - Jwt__Issuer=EMS.API
       - Jwt__Audience=EMS.Flutter
@@ -66,14 +69,15 @@ services:
       mongodb:
         condition: service_healthy
       ml-service:
-        condition: service_healthy
+        condition: service_started
     networks:
       - ems-network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 60s
 
   # Mongo Express (Development UI for MongoDB)
   mongo-express:
@@ -83,11 +87,8 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-changeme}
-      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: "false"
     depends_on:
       mongodb:
         condition: service_healthy
