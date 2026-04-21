@@ -44,22 +44,36 @@ public class AuthService : IAuthService
         // Auto-upsert a Driver document when a Driver-role user logs in
         if (user.Role == UserRole.Driver)
         {
-            var driverFilter = Builders<Driver>.Filter.Eq(d => d.UserId, user.Id!);
-            var driverUpdate = Builders<Driver>.Update
-                .SetOnInsert(d => d.UserId,    user.Id!)
-                .SetOnInsert(d => d.VehicleId, string.Empty)
-                .SetOnInsert(d => d.Status,    DriverStatus.Available)
-                .Set(d => d.UpdatedAt, DateTime.UtcNow);
+            try
+            {
+                var driverFilter = Builders<Driver>.Filter.Eq(d => d.UserId, user.Id!);
+                var driverUpdate = Builders<Driver>.Update
+                    .SetOnInsert(d => d.UserId,    user.Id!)
+                    .SetOnInsert(d => d.VehicleId, string.Empty)
+                    .SetOnInsert(d => d.Status,    DriverStatus.Available)
+                    .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-            await _drivers.UpdateOneAsync(
-                driverFilter, driverUpdate,
-                new UpdateOptions { IsUpsert = true });
+                await _drivers.UpdateOneAsync(
+                    driverFilter, driverUpdate,
+                    new UpdateOptions { IsUpsert = true });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthService] Driver upsert failed (non-fatal): {ex.Message}");
+            }
         }
 
         var (token, jti) = _tokenService.GenerateTokenWithJti(user);
 
-        // Persist session to MongoDB
-        await _sessionService.CreateAsync(jti, user.Id!, user.FullName, user.Email, user.Role.ToString());
+        // Persist session to MongoDB (non-fatal if it fails)
+        try
+        {
+            await _sessionService.CreateAsync(jti, user.Id!, user.FullName, user.Email, user.Role.ToString());
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AuthService] Session create failed (non-fatal): {ex.Message}");
+        }
 
         return new AuthResponse(token, user.Id!, user.FullName, user.Email, user.Role.ToString());
     }
