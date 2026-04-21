@@ -32,8 +32,8 @@ const users = [
   {
     fullName: "EMS Admin",
     email: "admin@ems.local",
-    // BCrypt hash of "Admin@123" (work factor 12)
-    passwordHash: "$2a$12$7QzQ1rYkVqBW3a1mGkJxK.Ht8N9V2lMz6tP0sEuWdXcFbAjRnOiYu",
+    // BCrypt hash of "Admin@123" (work factor 10)
+    passwordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye",
     role: "Admin",
     isActive: true,
     createdAt: new Date(),
@@ -42,8 +42,8 @@ const users = [
   {
     fullName: "EMS Dispatcher",
     email: "dispatcher@ems.local",
-    // BCrypt hash of "Dispatch@123" (work factor 12)
-    passwordHash: "$2a$12$3pL8mNkT5vBcQ2wRsXeJd.Yu7GHa0FoKnDi4lZsWqMtPbEjCrUhVx",
+    // BCrypt hash of "Dispatch@123" (work factor 10)
+    passwordHash: "$2a$10$R9h.cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUm",
     role: "Dispatcher",
     isActive: true,
     createdAt: new Date(),
@@ -52,8 +52,8 @@ const users = [
   {
     fullName: "EMS Operator",
     email: "operator@ems.local",
-    // BCrypt hash of "Operator@123" (work factor 12)
-    passwordHash: "$2a$12$9sK2nPwL6cDvR4xTyUeQf.Zu8IKb1GoJmEh5mAsXqNtOcFkBrViWy",
+    // BCrypt hash of "Operator@123" (work factor 10)
+    passwordHash: "$2a$10$vI8aWBYW2BTqTytExIgnS.8t5ubCHZqParuQOstdGK8DKSqI9VPy",
     role: "EmsOperator",
     isActive: true,
     createdAt: new Date(),
@@ -62,8 +62,8 @@ const users = [
   {
     fullName: "EMS Driver",
     email: "driver@ems.local",
-    // BCrypt hash of "Driver@123" (work factor 12)
-    passwordHash: "$2a$12$5rM4oQvN7eCwS3yUzVfPg.Xv9JLd2HpKoGi6nBtYrMuDeFjAsUhWz",
+    // BCrypt hash of "Driver@123" (work factor 10)
+    passwordHash: "$2a$10$N9qo8uLOickgx2ZMRZoMye",
     role: "Driver",
     isActive: true,
     createdAt: new Date(),
