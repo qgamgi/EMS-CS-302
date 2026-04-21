@@ -1,7 +1,17 @@
-fastapi==0.115.5
-uvicorn[standard]==0.32.1
-pydantic==2.9.2
-scikit-learn==1.5.2
-pandas==2.2.3
-numpy==1.26.4
-requests==2.32.3
+# Minimum supported Python: 3.10
+# Recommended Python for local dev: 3.12 or 3.13 (pre-built wheels available for all packages)
+# Python 3.14 users: pip will attempt to build scikit-learn from source if no wheel exists yet.
+
+fastapi>=0.115.5
+uvicorn[standard]>=0.32.1
+pydantic>=2.9.2
+
+# scikit-learn: pinned to a range rather than an exact version so pip can
+# select a pre-built wheel for your Python version (avoids Cython compilation).
+scikit-learn>=1.5.2,<2.0
+
+# numpy: 2.x is required by scikit-learn 1.6+ on Python 3.14
+numpy>=1.26.4
+
+pandas>=2.2.3
+requests>=2.32.3
