@@ -127,6 +127,12 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
+// Middleware order matters for CORS:
+// UseRouting → UseCors → UseAuthentication → UseAuthorization → endpoints
+// UseCors must be after UseRouting so it can inspect the matched endpoint,
+// and before UseAuthentication so OPTIONS preflight requests are not rejected
+// with a 401 before the CORS headers are written.
+app.UseRouting();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
