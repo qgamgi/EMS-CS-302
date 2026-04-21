@@ -114,11 +114,13 @@ builder.Services.AddSwaggerGen(c =>
 // ─── Build ────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
+// Swagger available in all environments (gate behind auth or restrict to non-prod as needed)
+app.UseSwagger();
+app.UseSwaggerUI(c =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    c.SwaggerEndpoint("/swagger/v1/swagger.json", "EMS API v1");
+    c.RoutePrefix = "swagger";
+});
 
 app.UseCors();
 app.UseAuthentication();
