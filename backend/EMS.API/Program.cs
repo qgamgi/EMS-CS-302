@@ -126,6 +126,9 @@ app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 
+// Minimal liveness probe — used by Docker health check
+app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "EMS.API" }));
+
 app.MapControllers();
 app.MapHub<DispatchHub>("/hubs/dispatch");
 

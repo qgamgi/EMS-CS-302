@@ -30,14 +30,21 @@ from schemas import (
 # ─── App lifespan: load the model once at startup ────────────────────────────
 
 predictor = HospitalPredictor()
+_startup_error: str | None = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _startup_error
     api_key = os.getenv("ORS_API_KEY")
-    predictor.load(api_key=api_key)
+    try:
+        predictor.load(api_key=api_key)
+        print("[ml-service] Model loaded successfully.")
+    except Exception as exc:
+        _startup_error = str(exc)
+        print(f"[ml-service] WARNING: Model failed to load — service will run in degraded mode. Error: {exc}")
+        print("[ml-service] Hint: run train_model.py to generate the model files, then restart this container.")
     yield
-    # Cleanup if needed
 
 
 # ─── FastAPI app ──────────────────────────────────────────────────────────────
@@ -65,10 +72,14 @@ app.add_middleware(
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
-    """Liveness probe — returns whether the model is loaded."""
+    """
+    Liveness probe — always returns HTTP 200 so Docker marks the container healthy.
+    Check model_loaded / startup_error fields for actual readiness.
+    """
     return HealthResponse(
-        status="ok",
+        status="ok" if predictor.model is not None else "degraded",
         model_loaded=predictor.model is not None,
+        startup_error=_startup_error,
     )
 
 

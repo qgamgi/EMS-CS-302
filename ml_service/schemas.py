@@ -111,5 +111,6 @@ class EmsBaseInfo(BaseModel):
 
 
 class HealthResponse(BaseModel):
-    status: str
+    status: str          # "ok" | "degraded"
     model_loaded: bool
+    startup_error: Optional[str] = None  # populated when model failed to load
