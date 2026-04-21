@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # MongoDB Database
   mongodb:
@@ -26,6 +24,7 @@ services:
   # FastAPI ML Service
   ml-service:
     build:
+      # context is the ml_service folder; the Dockerfile copies from "." (that folder)
       context: ./ml_service
       dockerfile: Dockerfile
     container_name: ems-ml-service
@@ -33,10 +32,15 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - MODEL_PATH=/app/models/hospital_model.joblib
+      - MODELS_DIR=/app/models
+      - DATASETS_DIR=/app/datasets/hospital
+      - ORS_API_KEY=${ORS_API_KEY:-}
       - LOG_LEVEL=INFO
     volumes:
+      # Bind-mount artifacts from the host so the container uses the latest files
+      # without needing to rebuild the image when models are retrained.
       - ./models:/app/models:ro
+      - ./datasets:/app/datasets:ro
     networks:
       - ems-network
     healthcheck:
