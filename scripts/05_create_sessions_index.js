@@ -1,35 +1,34 @@
 // 05_create_sessions_index.js
-// Creates the sessions collection with:
-//  - TTL index on expiresAt (auto-delete expired sessions after 24h)
-//  - Unique index on jti (token ID) for fast lookup on logout
-//  - Index on userId for querying sessions per user
+// Adds supplementary indexes to the sessions collection.
+// NOTE: The sessions TTL index (sessions_ttl) and userId index (sessions_user)
+// are already created by 01_create_indexes.js — do NOT duplicate them here.
 
 const db = db.getSiblingDB('ems_db');
 
-db.createCollection('sessions');
-
-// TTL index — MongoDB automatically deletes documents when expiresAt is reached
-db.sessions.createIndex(
-  { expiresAt: 1 },
-  { expireAfterSeconds: 0, name: 'ttl_expiresAt' }
-);
+// Ensure the collection exists (idempotent)
+if (!db.getCollectionNames().includes('sessions')) {
+  db.createCollection('sessions');
+}
 
 // Unique index on jti for O(1) session lookup on logout
-db.sessions.createIndex(
-  { jti: 1 },
-  { unique: true, name: 'unique_jti' }
-);
-
-// Index on userId to quickly fetch all sessions for a given user
-db.sessions.createIndex(
-  { userId: 1 },
-  { name: 'idx_userId' }
-);
+// Use createIndex with a try/catch to be idempotent on re-runs
+try {
+  db.sessions.createIndex(
+    { jti: 1 },
+    { unique: true, name: 'unique_jti' }
+  );
+} catch (e) {
+  print('05: unique_jti index already exists, skipping.');
+}
 
 // Compound index for listing active sessions efficiently
-db.sessions.createIndex(
-  { isActive: 1, loginAt: -1 },
-  { name: 'idx_active_loginAt' }
-);
+try {
+  db.sessions.createIndex(
+    { isActive: 1, loginAt: -1 },
+    { name: 'idx_active_loginAt' }
+  );
+} catch (e) {
+  print('05: idx_active_loginAt index already exists, skipping.');
+}
 
-print('05: sessions collection and indexes created.');
+print('05: sessions supplementary indexes ensured.');
