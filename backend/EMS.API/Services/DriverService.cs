@@ -48,15 +48,16 @@ public class DriverService : IDriverService
         }).ToList();
     }
 
-    public async Task<DriverDto?> UpdateLocationAsync(string driverId, double lat, double lng)
+    public async Task<DriverDto?> UpdateLocationAsync(string userId, double lat, double lng)
     {
         var update = Builders<Driver>.Update
             .Set(d => d.CurrentLocation, new GeoPoint { Lat = lat, Lng = lng })
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-        await _drivers.UpdateOneAsync(d => d.Id == driverId, update);
+        // Filter by userId (JWT claim) not the Driver._id
+        await _drivers.UpdateOneAsync(d => d.UserId == userId, update);
 
-        var driver = await _drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        var driver = await _drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
         if (driver == null) return null;
 
         var user = await _users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();

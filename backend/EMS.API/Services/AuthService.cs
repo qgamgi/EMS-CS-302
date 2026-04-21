@@ -13,12 +13,19 @@ public interface IAuthService
 public class AuthService : IAuthService
 {
     private readonly IMongoCollection<User> _users;
+    private readonly IMongoCollection<Driver> _drivers;
     private readonly ITokenService _tokenService;
+    private readonly ISessionService _sessionService;
 
-    public AuthService(IMongoDatabase db, ITokenService tokenService)
+    public AuthService(
+        IMongoDatabase db,
+        ITokenService tokenService,
+        ISessionService sessionService)
     {
-        _users = db.GetCollection<User>("users");
-        _tokenService = tokenService;
+        _users          = db.GetCollection<User>("users");
+        _drivers        = db.GetCollection<Driver>("drivers");
+        _tokenService   = tokenService;
+        _sessionService = sessionService;
     }
 
     public async Task<AuthResponse?> LoginAsync(LoginRequest request)
@@ -31,10 +38,29 @@ public class AuthService : IAuthService
             return null;
 
         // Update lastSeenAt
-        var update = Builders<User>.Update.Set(u => u.LastSeenAt, DateTime.UtcNow);
-        await _users.UpdateOneAsync(u => u.Id == user.Id, update);
+        var userUpdate = Builders<User>.Update.Set(u => u.LastSeenAt, DateTime.UtcNow);
+        await _users.UpdateOneAsync(u => u.Id == user.Id, userUpdate);
 
-        var token = _tokenService.GenerateToken(user);
+        // Auto-upsert a Driver document when a Driver-role user logs in
+        if (user.Role == UserRole.Driver)
+        {
+            var driverFilter = Builders<Driver>.Filter.Eq(d => d.UserId, user.Id!);
+            var driverUpdate = Builders<Driver>.Update
+                .SetOnInsert(d => d.UserId,    user.Id!)
+                .SetOnInsert(d => d.VehicleId, string.Empty)
+                .SetOnInsert(d => d.Status,    DriverStatus.Available)
+                .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+            await _drivers.UpdateOneAsync(
+                driverFilter, driverUpdate,
+                new UpdateOptions { IsUpsert = true });
+        }
+
+        var (token, jti) = _tokenService.GenerateTokenWithJti(user);
+
+        // Persist session to MongoDB
+        await _sessionService.CreateAsync(jti, user.Id!, user.FullName, user.Email, user.Role.ToString());
+
         return new AuthResponse(token, user.Id!, user.FullName, user.Email, user.Role.ToString());
     }
 
@@ -49,15 +75,29 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = request.FullName,
-            Email = request.Email,
+            FullName     = request.FullName,
+            Email        = request.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password, workFactor: 12),
-            Role = role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow,
+            Role         = role,
+            IsActive     = true,
+            CreatedAt    = DateTime.UtcNow,
         };
 
         await _users.InsertOneAsync(user);
+
+        // Auto-create a Driver document when registering a Driver-role user
+        if (role == UserRole.Driver)
+        {
+            var driver = new Driver
+            {
+                UserId    = user.Id!,
+                VehicleId = string.Empty,
+                Status    = DriverStatus.Available,
+                UpdatedAt = DateTime.UtcNow,
+            };
+            await _drivers.InsertOneAsync(driver);
+        }
+
         return user;
     }
 }

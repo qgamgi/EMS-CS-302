@@ -88,6 +88,7 @@ builder.Services.AddHttpClient<IMlService, MlService>(client =>
 
 // ─── Application services ─────────────────────────────────────────────────────
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDispatchService, DispatchService>();
 builder.Services.AddScoped<IDriverService, DriverService>();
