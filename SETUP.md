@@ -72,16 +72,14 @@ cp .env.example .env
 Open `.env` and edit:
 
 ```env
-# Strong password for the MongoDB admin user
-MONGO_PASSWORD=changeme
-
 # JWT signing secret — must be at least 32 characters
 JWT_SECRET=your-super-secret-key-at-least-32-characters-long
 
-# Password for Mongo Express (dev browser UI)
-MONGO_EXPRESS_PASSWORD=admin123
+# OpenRouteService API key (optional — leave blank to use haversine distance)
+ORS_API_KEY=
 ```
 
+> MongoDB runs without authentication in this setup (local development only). No MongoDB password is required.
 > Do **not** commit the `.env` file to version control. It is already in `.gitignore`.
 
 ---
@@ -101,6 +99,13 @@ docker compose up --build
 ```bash
 docker compose --profile dev up --build
 ```
+
+> **If you get a build error about `/datasets` not found** (especially after pulling a recent update), Docker may be replaying a stale cached layer. Fix it by forcing a clean rebuild:
+>
+> ```bash
+> docker compose build --no-cache
+> docker compose --profile dev up
+> ```
 
 The first run will take several minutes to pull images and build the containers. Subsequent starts are fast.
 
@@ -138,9 +143,7 @@ Both should return `{"status":"ok",...}`.
 The MongoDB init scripts run automatically on first startup (Docker mounts `scripts/` into the container). Verify seeding worked by checking Mongo Express at http://localhost:8081 or by running:
 
 ```bash
-docker exec -it ems-mongodb mongosh \
-  -u admin -p changeme --authenticationDatabase admin \
-  ems_dispatch \
+docker exec -it ems-mongodb mongosh ems_db \
   --eval "db.ems_bases.countDocuments()"
 ```
 
@@ -298,9 +301,19 @@ docker compose down -v
 - On a physical device, use your machine's LAN IP (e.g., `192.168.1.x`).
 - Confirm the backend container is running: `docker compose ps`.
 
-**MongoDB authentication failed**
-- Make sure `.env` has the same `MONGO_PASSWORD` you used when the container was first created.
-- If you changed the password, delete the volume and recreate: `docker compose down -v && docker compose up --build`.
+**Docker build fails with `/datasets: not found`**
+- This is a stale Docker layer cache from a previous build. Run:
+  ```bash
+  docker compose build --no-cache
+  docker compose up
+  ```
+
+**MongoDB connection refused**
+- MongoDB runs without authentication. No password is needed.
+- If the volume was created under the old auth-enabled setup, wipe it and restart:
+  ```bash
+  docker compose down -v && docker compose up --build
+  ```
 
 **Port already in use**
 - Stop any existing processes on ports `27017`, `8000`, or `5000`, or edit the port mappings in `docker-compose.yml`.
