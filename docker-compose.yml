@@ -1,0 +1,105 @@
+version: "3.9"
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: ems-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
+      MONGO_INITDB_DATABASE: ems_dispatch
+    volumes:
+      - mongodb_data:/data/db
+      - ./scripts:/docker-entrypoint-initdb.d:ro
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # FastAPI ML Service
+  ml-service:
+    build:
+      context: ./ml_service
+      dockerfile: Dockerfile
+    container_name: ems-ml-service
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/models/hospital_model.joblib
+      - LOG_LEVEL=INFO
+    volumes:
+      - ./models:/app/models:ro
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ASP.NET Core Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ems-backend
+    restart: unless-stopped
+    ports:
+      - "5000:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__MongoDB=mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/ems_dispatch?authSource=admin
+      - Jwt__Key=${JWT_SECRET:-your-super-secret-key-at-least-32-chars}
+      - Jwt__Issuer=EMS.API
+      - Jwt__Audience=EMS.Flutter
+      - MlService__BaseUrl=http://ml-service:8000
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      ml-service:
+        condition: service_healthy
+    networks:
+      - ems-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Mongo Express (Development UI for MongoDB)
+  mongo-express:
+    image: mongo-express:latest
+    container_name: ems-mongo-express
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-changeme}
+      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - ems-network
+    profiles:
+      - dev
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  ems-network:
+    driver: bridge
