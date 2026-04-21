@@ -1,5 +1,5 @@
 services:
-  # MongoDB Database
+  # MongoDB Database (no authentication — for local development)
   mongodb:
     image: mongo:7
     container_name: ems-mongodb
@@ -7,9 +7,7 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-changeme}
-      MONGO_INITDB_DATABASE: ems_dispatch
+      MONGO_INITDB_DATABASE: ems_db
     volumes:
       - mongodb_data:/data/db
       - ./scripts:/docker-entrypoint-initdb.d:ro
@@ -61,7 +59,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__MongoDB=mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/ems_dispatch?authSource=admin
+      - ConnectionStrings__MongoDB=mongodb://mongodb:27017/ems_db
       - Jwt__Key=${JWT_SECRET:-your-super-secret-key-at-least-32-chars}
       - Jwt__Issuer=EMS.API
       - Jwt__Audience=EMS.Flutter
@@ -87,11 +85,8 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-changeme}
-      ME_CONFIG_MONGODB_URL: mongodb://admin:${MONGO_PASSWORD:-changeme}@mongodb:27017/
-      ME_CONFIG_BASICAUTH_USERNAME: admin
-      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD:-admin123}
+      ME_CONFIG_MONGODB_URL: mongodb://mongodb:27017/
+      ME_CONFIG_BASICAUTH_ENABLED: "false"
     depends_on:
       mongodb:
         condition: service_healthy
