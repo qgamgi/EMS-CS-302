@@ -47,5 +47,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/images/
+  # Add asset directories here when image/icon assets are added, e.g.:
+  # assets:
+  #   - assets/images/
