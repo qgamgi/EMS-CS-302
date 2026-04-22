@@ -476,4 +476,4 @@ mongosh "mongodb://localhost:27017/ems_db" scripts/05_create_sessions_index.js
 
 **Version:** 1.0.0 MVP  
 **Last Updated:** 2026-04-22  
-**Developed by:** EMS Marikina Development Team
+**Developed by:** <Developer Name>
