@@ -137,4 +137,8 @@ app.MapGet("/health", () => Results.Ok(new { status = "ok", service = "EMS.API" 
 app.MapControllers();
 app.MapHub<DispatchHub>("/hubs/dispatch");
 
-app.Run();
+// Bind on all interfaces so Android devices on the same Wi-Fi can reach the
+// backend. By default Kestrel only listens on localhost, which is invisible
+// to a real phone. This makes the API reachable at http://<LAN-IP>:5000.
+// In production, replace with a proper reverse proxy (nginx/IIS) + HTTPS.
+app.Run("http://0.0.0.0:5000");
