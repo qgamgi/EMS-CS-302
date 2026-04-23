@@ -1,17 +1,8 @@
-<!-- Flutter v2 embedding – compatible with Flutter 3.x and above.
-     Do NOT add:
-       <meta-data android:name="flutterEmbedding" android:value="1" />
-     or any io.flutter.app.FlutterApplication references – those are v1 and
-     have been deleted from Flutter 3+. -->
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Required: access the network at all -->
     <uses-permission android:name="android.permission.INTERNET" />
-
-    <!-- Required: check whether a network connection is available -->
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Required: GPS location for driver location updates -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
 
@@ -32,10 +23,6 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- Specifies an Android theme to apply to this Activity as soon as
-                 the Android process has started. This theme is visible to the user
-                 while the Flutter UI initializes. After that, this theme continues
-                 to determine the Window background behind the Flutter UI. -->
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
@@ -46,9 +33,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Required to query activities that can process text, see:
-             https://developer.android.com/training/package-visibility and
-             https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT -->
         <queries>
             <intent>
                 <action android:name="android.intent.action.PROCESS_TEXT" />

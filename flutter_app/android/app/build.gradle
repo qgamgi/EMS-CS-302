@@ -1,16 +1,12 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id "dev.flutter.flutter-gradle-plugin"
 }
 
 android {
     namespace = "com.example.ems_dispatcher"
-
-    // Flutter 3.x requires compileSdk 35+
     compileSdk = flutter.compileSdkVersion
-
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -24,7 +20,6 @@ android {
 
     defaultConfig {
         applicationId = "com.example.ems_dispatcher"
-        // Flutter 3.19+ minimum
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -33,7 +28,6 @@ android {
 
     buildTypes {
         release {
-            // Uses the debug signing config for now; swap for a real keystore in production.
             signingConfig = signingConfigs.debug
             minifyEnabled false
             shrinkResources false
