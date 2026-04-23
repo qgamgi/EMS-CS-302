@@ -10,6 +10,7 @@ public interface IDispatchService
 {
     Task<List<DispatchSummaryDto>> GetAllAsync();
     Task<DispatchDetailDto?> GetByIdAsync(string id);
+    Task<DispatchDetailDto?> GetActiveForDriverAsync(string userId);
     Task<DispatchDetailDto> CreateAsync(CreateDispatchRequest request, string callerId);
     Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status);
     Task<DispatchDetailDto?> AssignDriverAsync(string id, string driverId);
@@ -46,6 +47,24 @@ public class DispatchService : IDispatchService
     public async Task<DispatchDetailDto?> GetByIdAsync(string id)
     {
         var dispatch = await _dispatches.Find(d => d.Id == id).FirstOrDefaultAsync();
+        return dispatch == null ? null : ToDetail(dispatch);
+    }
+
+    public async Task<DispatchDetailDto?> GetActiveForDriverAsync(string userId)
+    {
+        var activeStatuses = new[]
+        {
+            DispatchStatus.Assigned,
+            DispatchStatus.EnRoute,
+            DispatchStatus.OnScene,
+            DispatchStatus.Transporting,
+        };
+
+        var dispatch = await _dispatches
+            .Find(d => d.AssignedDriverId == userId && activeStatuses.Contains(d.Status))
+            .SortByDescending(d => d.UpdatedAt)
+            .FirstOrDefaultAsync();
+
         return dispatch == null ? null : ToDetail(dispatch);
     }
 
@@ -139,14 +158,22 @@ public class DispatchService : IDispatchService
 
     public async Task<DispatchDetailDto?> AssignDriverAsync(string id, string driverId)
     {
+        // driverId is the Driver document _id (from the drivers list in the UI).
+        // Resolve the Driver to get the associated UserId so the dispatch stores
+        // the User's ObjectId — matching what the Driver JWT claim contains.
+        var driver = await _drivers.Find(dr => dr.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return null;
+
+        var userIdToStore = driver.UserId; // User's ObjectId
+
         var update = Builders<Dispatch>.Update
-            .Set(d => d.AssignedDriverId, driverId)
+            .Set(d => d.AssignedDriverId, userIdToStore)
             .Set(d => d.Status, DispatchStatus.Assigned)
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
         await _dispatches.UpdateOneAsync(d => d.Id == id, update);
 
-        // Mark driver as busy
+        // Mark driver as busy (filter by Driver._id)
         var driverUpdate = Builders<Driver>.Update
             .Set(dr => dr.Status, DriverStatus.Busy)
             .Set(dr => dr.ActiveDispatchId, id)
@@ -158,8 +185,8 @@ public class DispatchService : IDispatchService
 
         var detail = ToDetail(dispatch);
 
-        // Notify assigned driver specifically
-        await _hub.Clients.Group($"Driver_{driverId}")
+        // Notify the assigned driver by their UserId group
+        await _hub.Clients.Group($"Driver_{userIdToStore}")
             .SendAsync("DriverAssigned", detail);
         await _hub.Clients.Groups("Dispatcher", "EmsOperator")
             .SendAsync("DispatchStatusUpdated", detail);

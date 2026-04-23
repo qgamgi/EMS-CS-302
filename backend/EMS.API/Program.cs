@@ -54,24 +54,17 @@ builder.Services
 builder.Services.AddAuthorization();
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-// Flutter web runs on a random high port (e.g. localhost:53920), so we allow
-// any localhost/127.0.0.1 origin in development. In production, replace
-// SetIsOriginAllowed with a strict WithOrigins() list.
+// Flutter web runs on a random high port, so we allow ALL localhost origins.
+// In production replace SetIsOriginAllowed with a strict WithOrigins() list.
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
+    options.AddPolicy("AllowAll", policy =>
     {
         policy
-            .SetIsOriginAllowed(origin =>
-            {
-                if (string.IsNullOrEmpty(origin)) return false;
-                var uri = new Uri(origin);
-                // Allow any port on localhost / 127.0.0.1 for local dev
-                return uri.Host is "localhost" or "127.0.0.1";
-            })
+            .SetIsOriginAllowed(_ => true)   // allow any origin in dev
             .AllowAnyHeader()
             .AllowAnyMethod()
-            .AllowCredentials(); // Required for SignalR WebSocket
+            .AllowCredentials();             // required for SignalR WebSocket
     });
 });
 
@@ -88,6 +81,7 @@ builder.Services.AddHttpClient<IMlService, MlService>(client =>
 
 // ─── Application services ─────────────────────────────────────────────────────
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<ISessionService, SessionService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IDispatchService, DispatchService>();
 builder.Services.AddScoped<IDriverService, DriverService>();
@@ -133,7 +127,7 @@ app.UseSwaggerUI(c =>
 // and before UseAuthentication so OPTIONS preflight requests are not rejected
 // with a 401 before the CORS headers are written.
 app.UseRouting();
-app.UseCors();
+app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 

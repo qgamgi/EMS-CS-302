@@ -1,3 +1,5 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using EMS.API.DTOs;
 using EMS.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -10,10 +12,12 @@ namespace EMS.API.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthService _authService;
+    private readonly ISessionService _sessionService;
 
-    public AuthController(IAuthService authService)
+    public AuthController(IAuthService authService, ISessionService sessionService)
     {
-        _authService = authService;
+        _authService    = authService;
+        _sessionService = sessionService;
     }
 
     /// <summary>Register a new user (Admin only).</summary>
@@ -50,15 +54,15 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
-    /// <summary>
-    /// Logout — client should discard the token.
-    /// Server-side session cleanup is handled by the MongoDB TTL index on sessions.
-    /// </summary>
+    /// <summary>Logout — marks the session as inactive in MongoDB.</summary>
     [HttpPost("logout")]
     [Authorize]
-    public IActionResult Logout()
+    public async Task<IActionResult> Logout()
     {
-        // Stateless JWT: instruct client to delete token.
+        var jti = User.FindFirstValue(JwtRegisteredClaimNames.Jti);
+        if (!string.IsNullOrEmpty(jti))
+            await _sessionService.EndAsync(jti);
+
         return Ok(new { message = "Logged out successfully." });
     }
 }

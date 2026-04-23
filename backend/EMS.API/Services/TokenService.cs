@@ -9,6 +9,7 @@ namespace EMS.API.Services;
 public interface ITokenService
 {
     string GenerateToken(User user);
+    (string token, string jti) GenerateTokenWithJti(User user);
 }
 
 public class TokenService : ITokenService
@@ -20,15 +21,20 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string GenerateToken(User user)
+    public string GenerateToken(User user) => GenerateTokenWithJti(user).token;
+
+    public (string token, string jti) GenerateTokenWithJti(User user)
     {
         var jwtSettings = _config.GetSection("Jwt");
         var key = new SymmetricSecurityKey(
             Encoding.UTF8.GetBytes(jwtSettings["Key"]
                 ?? throw new InvalidOperationException("JWT Key not configured")));
 
+        var jti = Guid.NewGuid().ToString();
+
         var claims = new[]
         {
+            new Claim(JwtRegisteredClaimNames.Jti, jti),
             new Claim(ClaimTypes.NameIdentifier, user.Id!),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Name, user.FullName),
@@ -44,6 +50,6 @@ public class TokenService : ITokenService
             signingCredentials: new SigningCredentials(key, SecurityAlgorithms.HmacSha256)
         );
 
-        return new JwtSecurityTokenHandler().WriteToken(token);
+        return (new JwtSecurityTokenHandler().WriteToken(token), jti);
     }
 }

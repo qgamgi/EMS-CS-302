@@ -27,6 +27,20 @@ public class DispatchController : ControllerBase
         return Ok(dispatches);
     }
 
+    /// <summary>
+    /// Get active dispatch assigned to the calling driver.
+    /// Filters by assignedDriverId == JWT userId, status not Completed/Cancelled.
+    /// </summary>
+    [HttpGet("my")]
+    [Authorize(Roles = "Driver")]
+    public async Task<IActionResult> GetMyDispatch()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        var dispatch = await _dispatchService.GetActiveForDriverAsync(userId);
+        if (dispatch == null) return Ok(null);
+        return Ok(dispatch);
+    }
+
     /// <summary>Get dispatch by ID (all authenticated roles).</summary>
     [HttpGet("{id}")]
     public async Task<IActionResult> GetById(string id)
