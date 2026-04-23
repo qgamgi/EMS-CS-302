@@ -1,3 +1,8 @@
+<!-- Flutter v2 embedding – compatible with Flutter 3.x and above.
+     Do NOT add:
+       <meta-data android:name="flutterEmbedding" android:value="1" />
+     or any io.flutter.app.FlutterApplication references – those are v1 and
+     have been deleted from Flutter 3+. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Required: access the network at all -->

@@ -97,6 +97,37 @@ flutter build apk --debug --dart-define=API_BASE_URL=https://xxxx.ngrok-free.app
 
 ---
 
+## Fixing "Build failed due to use of deleted Android v1 embedding"
+
+Flutter 3+ completely removed the old v1 Android embedding. If you see this error
+it means your local `android/` folder still has old v1 files. Replace these files
+with the updated versions from this repo:
+
+1. **`android/app/src/main/kotlin/com/example/ems_dispatcher/MainActivity.kt`**
+   Must extend `FlutterActivity` (v2), NOT `FlutterFragmentActivity` or import
+   `io.flutter.app.*` (those are v1 and are gone).
+
+2. **`android/app/build.gradle`**
+   Must use the `dev.flutter.flutter-gradle-plugin` plugin and NOT reference
+   `apply plugin: 'com.android.application'` without the new settings.gradle
+   plugin block.
+
+3. **`android/settings.gradle`**
+   Must include the `pluginManagement { includeBuild(flutterSdkPath) }` block.
+
+4. **`android/gradle.properties`**
+   Must have `android.useAndroidX=true` and `android.enableJetifier=true`.
+
+After replacing these files run:
+```bash
+cd flutter_app
+flutter clean
+flutter pub get
+flutter build apk --release --dart-define=API_BASE_URL=http://172.20.10.4:5000
+```
+
+---
+
 ## Troubleshooting
 
 | Symptom | Cause | Fix |
