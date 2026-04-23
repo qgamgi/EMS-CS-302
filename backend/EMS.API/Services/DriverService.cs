@@ -68,8 +68,8 @@ public class DriverService : IDriverService
             driver.Status.ToString(), driver.ActiveDispatchId
         );
 
-        // Broadcast GPS update to Dispatcher group
-        await _hub.Clients.Group("Dispatcher")
+        // Broadcast GPS update to Dispatcher + EmsOperator groups
+        await _hub.Clients.Groups("Dispatcher", "EmsOperator")
             .SendAsync("DriverLocationUpdated", dto);
 
         return dto;
