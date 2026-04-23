@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Flutter needs internet permission for profile mode. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+</manifest>
