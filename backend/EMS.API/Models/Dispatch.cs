@@ -130,4 +130,10 @@ public class Dispatch
 
     [BsonElement("completedAt")]
     public DateTime? CompletedAt { get; set; }
+
+    [BsonElement("cancellationReason")]
+    public string? CancellationReason { get; set; }
+
+    [BsonElement("numberOfAmbulances")]
+    public int NumberOfAmbulances { get; set; } = 1;
 }

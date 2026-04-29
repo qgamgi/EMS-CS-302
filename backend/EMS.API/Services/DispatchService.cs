@@ -12,7 +12,7 @@ public interface IDispatchService
     Task<DispatchDetailDto?> GetByIdAsync(string id);
     Task<DispatchDetailDto?> GetActiveForDriverAsync(string userId);
     Task<DispatchDetailDto> CreateAsync(CreateDispatchRequest request, string callerId);
-    Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status);
+    Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status, string? cancellationReason = null);
     Task<DispatchDetailDto?> AssignDriverAsync(string id, string driverId);
 }
 
@@ -95,6 +95,7 @@ public class DispatchService : IDispatchService
             },
             Severity = request.Severity,
             Condition = request.Condition,
+            NumberOfAmbulances = request.NumberOfAmbulances,
             Status = DispatchStatus.Pending,
             MlPrediction = mlResult == null ? null : new MlPrediction
             {
@@ -134,7 +135,7 @@ public class DispatchService : IDispatchService
         return detail;
     }
 
-    public async Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status)
+    public async Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status, string? cancellationReason = null)
     {
         if (!Enum.TryParse<DispatchStatus>(status, out var parsed))
             throw new ArgumentException($"Invalid status: {status}");
@@ -146,10 +147,28 @@ public class DispatchService : IDispatchService
         if (parsed == DispatchStatus.Completed)
             update = update.Set(d => d.CompletedAt, DateTime.UtcNow);
 
+        if (parsed == DispatchStatus.Cancelled && cancellationReason != null)
+            update = update.Set(d => d.CancellationReason, cancellationReason);
+
         await _dispatches.UpdateOneAsync(d => d.Id == id, update);
 
         var dispatch = await _dispatches.Find(d => d.Id == id).FirstOrDefaultAsync();
         if (dispatch == null) return null;
+
+        // When the dispatch is completed or cancelled, reset the assigned
+        // driver back to Available so they can receive new dispatches.
+        if ((parsed == DispatchStatus.Completed || parsed == DispatchStatus.Cancelled)
+            && dispatch.AssignedDriverId != null)
+        {
+            var driverUpdate = Builders<Driver>.Update
+                .Set(dr => dr.Status, DriverStatus.Available)
+                .Set(dr => dr.ActiveDispatchId, (string?)null)
+                .Set(dr => dr.UpdatedAt, DateTime.UtcNow);
+
+            // AssignedDriverId holds the User's ObjectId (see AssignDriverAsync)
+            await _drivers.UpdateOneAsync(
+                dr => dr.UserId == dispatch.AssignedDriverId, driverUpdate);
+        }
 
         var detail = ToDetail(dispatch);
         await _hub.Clients.All.SendAsync("DispatchStatusUpdated", detail);
@@ -194,7 +213,7 @@ public class DispatchService : IDispatchService
         return detail;
     }
 
-    // ─── Mapping helpers ───────────────────────────────────────────────────────
+    // ─── Mapping helpers ────────────────���──────────────────────────────────────
 
     private static DispatchSummaryDto ToSummary(Dispatch d) => new(
         d.Id!,

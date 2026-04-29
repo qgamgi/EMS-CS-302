@@ -8,11 +8,13 @@ public record CreateDispatchRequest(
     double Longitude,
     string Address,
     string Severity,
-    string Condition
+    string Condition,
+    int NumberOfAmbulances = 1
 );
 
 public record UpdateDispatchStatusRequest(
-    string Status
+    string Status,
+    string? CancellationReason = null
 );
 
 public record AssignDriverRequest(
