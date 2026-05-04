@@ -44,7 +44,9 @@ public record DispatchDetailDto(
     MlPredictionDto? MlPrediction,
     DateTime CreatedAt,
     DateTime UpdatedAt,
-    DateTime? CompletedAt
+    DateTime? CompletedAt,
+    string? CancellationReason = null,
+    int NumberOfAmbulances = 1
 );
 
 public record LocationDto(double Lat, double Lng, string Address);

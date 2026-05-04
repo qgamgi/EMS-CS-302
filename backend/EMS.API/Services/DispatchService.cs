@@ -256,6 +256,8 @@ public class DispatchService : IDispatchService
         ),
         d.CreatedAt,
         d.UpdatedAt,
-        d.CompletedAt
+        d.CompletedAt,
+        d.CancellationReason,
+        d.NumberOfAmbulances
     );
 }
