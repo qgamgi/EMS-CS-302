@@ -118,6 +118,8 @@ public class DispatchService : IDispatchService
                 EmsBaseId = mlResult.EmsBase?.BaseId ?? 0,
                 EmsBaseName = mlResult.EmsBase?.BaseName ?? string.Empty,
                 IsFallbackCalculation = mlResult.IsFallbackCalculation,
+                EmsBaseCoords = mlResult.EmsBase?.BaseCoords == null ? null
+                    : new GeoPoint { Lat = mlResult.EmsBase.BaseCoords.Lat, Lng = mlResult.EmsBase.BaseCoords.Lng },
             },
             AssignedEmsBaseId = mlResult?.EmsBase?.BaseId,
             CreatedAt = DateTime.UtcNow,
@@ -252,7 +254,9 @@ public class DispatchService : IDispatchService
                     d.MlPrediction.TimeComponents.TotalTime),
             d.MlPrediction.EmsBaseId,
             d.MlPrediction.EmsBaseName,
-            d.MlPrediction.IsFallbackCalculation
+            d.MlPrediction.IsFallbackCalculation,
+            d.MlPrediction.EmsBaseCoords == null ? null
+                : new GeoPointDto(d.MlPrediction.EmsBaseCoords.Lat, d.MlPrediction.EmsBaseCoords.Lng)
         ),
         d.CreatedAt,
         d.UpdatedAt,

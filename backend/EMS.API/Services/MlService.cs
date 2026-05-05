@@ -88,6 +88,9 @@ public class MlEmsBase
 
     [JsonPropertyName("base_name")]
     public string BaseName { get; set; } = string.Empty;
+
+    [JsonPropertyName("base_coords")]
+    public MlGeoPoint? BaseCoords { get; set; }
 }
 
 public class MlTimeComponents

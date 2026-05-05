@@ -84,6 +84,9 @@ public class MlPrediction
 
     [BsonElement("is_fallback_calculation")]
     public bool IsFallbackCalculation { get; set; }
+
+    [BsonElement("ems_base_coords")]
+    public GeoPoint? EmsBaseCoords { get; set; }
 }
 
 public class Dispatch

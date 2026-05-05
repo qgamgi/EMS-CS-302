@@ -60,7 +60,8 @@ public record MlPredictionDto(
     TimeComponentsDto? TimeComponents,
     int EmsBaseId,
     string EmsBaseName,
-    bool IsFallbackCalculation
+    bool IsFallbackCalculation,
+    GeoPointDto? EmsBaseCoords = null
 );
 
 public record GeoPointDto(double Lat, double Lng);
