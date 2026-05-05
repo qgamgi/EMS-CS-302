@@ -118,14 +118,6 @@ public class DispatchService : IDispatchService
                 EmsBaseId = mlResult.EmsBase?.BaseId ?? 0,
                 EmsBaseName = mlResult.EmsBase?.BaseName ?? string.Empty,
                 IsFallbackCalculation = mlResult.IsFallbackCalculation,
-                // Use coords from ML response if present; otherwise fall back to
-                // the hardcoded lookup table for known Marikina EMS bases.
-                EmsBaseCoords = mlResult.EmsBase == null ? null
-                    : (mlResult.EmsBase.BaseLat.HasValue && mlResult.EmsBase.BaseLng.HasValue)
-                        ? new GeoPoint { Lat = mlResult.EmsBase.BaseLat.Value, Lng = mlResult.EmsBase.BaseLng.Value }
-                        : EmsBaseFallbackCoords.Get(mlResult.EmsBase.BaseId) is var fb && fb.HasValue
-                            ? new GeoPoint { Lat = fb.Value.Lat, Lng = fb.Value.Lng }
-                            : null,
             },
             AssignedEmsBaseId = mlResult?.EmsBase?.BaseId,
             CreatedAt = DateTime.UtcNow,
@@ -260,9 +252,7 @@ public class DispatchService : IDispatchService
                     d.MlPrediction.TimeComponents.TotalTime),
             d.MlPrediction.EmsBaseId,
             d.MlPrediction.EmsBaseName,
-            d.MlPrediction.IsFallbackCalculation,
-            d.MlPrediction.EmsBaseCoords == null ? null
-                : new GeoPointDto(d.MlPrediction.EmsBaseCoords.Lat, d.MlPrediction.EmsBaseCoords.Lng)
+            d.MlPrediction.IsFallbackCalculation
         ),
         d.CreatedAt,
         d.UpdatedAt,

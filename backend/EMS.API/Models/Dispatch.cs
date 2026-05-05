@@ -82,9 +82,6 @@ public class MlPrediction
     [BsonElement("ems_base_name")]
     public string EmsBaseName { get; set; } = string.Empty;
 
-    [BsonElement("ems_base_coords")]
-    public GeoPoint? EmsBaseCoords { get; set; }
-
     [BsonElement("is_fallback_calculation")]
     public bool IsFallbackCalculation { get; set; }
 }

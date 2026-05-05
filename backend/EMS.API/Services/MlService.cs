@@ -88,32 +88,6 @@ public class MlEmsBase
 
     [JsonPropertyName("base_name")]
     public string BaseName { get; set; } = string.Empty;
-
-    // Coordinates returned by the ML service (if available)
-    [JsonPropertyName("base_lat")]
-    public double? BaseLat { get; set; }
-
-    [JsonPropertyName("base_lng")]
-    public double? BaseLng { get; set; }
-}
-
-/// <summary>
-/// Fallback coordinates for known Marikina EMS bases, keyed by base_id.
-/// Used when the ML service does not return base_lat/base_lng.
-/// </summary>
-public static class EmsBaseFallbackCoords
-{
-    private static readonly Dictionary<int, (double Lat, double Lng)> _coords = new()
-    {
-        { 1, (14.6507, 121.1029) }, // Marikina City Main EMS Base
-        { 2, (14.6398, 121.1105) }, // Concepcion EMS Sub-station
-        { 3, (14.6601, 121.0953) }, // Nangka EMS Sub-station
-        { 4, (14.6473, 121.0872) }, // Tumana EMS Sub-station
-        { 5, (14.6550, 121.1200) }, // Parang EMS Sub-station
-    };
-
-    public static (double Lat, double Lng)? Get(int baseId) =>
-        _coords.TryGetValue(baseId, out var c) ? c : null;
 }
 
 public class MlTimeComponents
