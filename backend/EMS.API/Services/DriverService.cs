@@ -54,7 +54,6 @@ public class DriverService : IDriverService
             .Set(d => d.CurrentLocation, new GeoPoint { Lat = lat, Lng = lng })
             .Set(d => d.UpdatedAt, DateTime.UtcNow);
 
-        // Filter by userId (JWT claim) not the Driver._id
         await _drivers.UpdateOneAsync(d => d.UserId == userId, update);
 
         var driver = await _drivers.Find(d => d.UserId == userId).FirstOrDefaultAsync();
@@ -68,7 +67,6 @@ public class DriverService : IDriverService
             driver.Status.ToString(), driver.ActiveDispatchId
         );
 
-        // Broadcast GPS update to Dispatcher + EmsOperator groups
         await _hub.Clients.Groups("Dispatcher", "EmsOperator")
             .SendAsync("DriverLocationUpdated", dto);
 

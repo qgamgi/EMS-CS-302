@@ -149,11 +149,10 @@ public class DispatchService : IDispatchService
         if (parsed == DispatchStatus.Completed)
             update = update.Set(d => d.CompletedAt, DateTime.UtcNow);
 
-        // Always set cancellation reason when cancelling (even if null/empty for clarity)
+        // Always set cancellation reason when cancelling
         if (parsed == DispatchStatus.Cancelled)
         {
             var reason = string.IsNullOrWhiteSpace(cancellationReason) ? null : cancellationReason.Trim();
-            Console.WriteLine($"[v0] DispatchService.UpdateStatusAsync: Setting CancellationReason to '{reason ?? "(NULL)"}'");
             update = update.Set(d => d.CancellationReason, reason);
         }
 
@@ -172,7 +171,6 @@ public class DispatchService : IDispatchService
                 .Set(dr => dr.ActiveDispatchId, (string?)null)
                 .Set(dr => dr.UpdatedAt, DateTime.UtcNow);
 
-            // AssignedDriverId holds the User's ObjectId (see AssignDriverAsync)
             await _drivers.UpdateOneAsync(
                 dr => dr.UserId == dispatch.AssignedDriverId, driverUpdate);
         }
@@ -184,13 +182,10 @@ public class DispatchService : IDispatchService
 
     public async Task<DispatchDetailDto?> AssignDriverAsync(string id, string driverId)
     {
-        // driverId is the Driver document _id (from the drivers list in the UI).
-        // Resolve the Driver to get the associated UserId so the dispatch stores
-        // the User's ObjectId — matching what the Driver JWT claim contains.
         var driver = await _drivers.Find(dr => dr.Id == driverId).FirstOrDefaultAsync();
         if (driver == null) return null;
 
-        var userIdToStore = driver.UserId; // User's ObjectId
+        var userIdToStore = driver.UserId;
 
         var update = Builders<Dispatch>.Update
             .Set(d => d.AssignedDriverId, userIdToStore)
@@ -199,7 +194,6 @@ public class DispatchService : IDispatchService
 
         await _dispatches.UpdateOneAsync(d => d.Id == id, update);
 
-        // Mark driver as busy (filter by Driver._id)
         var driverUpdate = Builders<Driver>.Update
             .Set(dr => dr.Status, DriverStatus.Busy)
             .Set(dr => dr.ActiveDispatchId, id)
@@ -211,7 +205,6 @@ public class DispatchService : IDispatchService
 
         var detail = ToDetail(dispatch);
 
-        // Notify the assigned driver by their UserId group
         await _hub.Clients.Group($"Driver_{userIdToStore}")
             .SendAsync("DriverAssigned", detail);
         await _hub.Clients.Groups("Dispatcher", "EmsOperator")
@@ -219,8 +212,6 @@ public class DispatchService : IDispatchService
 
         return detail;
     }
-
-    // ─── Mapping helpers ────────────────���──────────────────────────────────────
 
     private static DispatchSummaryDto ToSummary(Dispatch d) => new(
         d.Id!,

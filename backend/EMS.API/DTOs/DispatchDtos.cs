@@ -15,14 +15,13 @@ public record CreateDispatchRequest(
 
 public class UpdateDispatchStatusRequest
 {
-    // Using lowercase property names that match the JSON exactly (Flutter sends camelCase)
-    // ASP.NET Core's System.Text.Json should bind these case-insensitively by default
-    public string status { get; set; } = string.Empty;
-    public string? cancellationReason { get; set; }
-    
-    // Convenience properties that map to the camelCase fields
-    public string Status => status;
-    public string? CancellationReason => cancellationReason;
+    // ASP.NET Core's System.Text.Json binds case-insensitively by default
+    // Flutter sends: {"status": "Cancelled", "cancellationReason": "reason"}
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("cancellationReason")]
+    public string? CancellationReason { get; set; }
 }
 
 public record AssignDriverRequest(
