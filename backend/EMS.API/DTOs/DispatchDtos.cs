@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using EMS.API.Models;
 
 namespace EMS.API.DTOs;
@@ -13,15 +12,12 @@ public record CreateDispatchRequest(
     int NumberOfAmbulances = 1
 );
 
+// Using a record with explicit JsonPropertyName attributes for reliable binding.
+// Flutter sends: {"status": "Cancelled", "cancellationReason": "reason"}
 public class UpdateDispatchStatusRequest
 {
-    // ASP.NET Core's System.Text.Json binds case-insensitively by default
-    // Flutter sends: {"status": "Cancelled", "cancellationReason": "reason"}
-    [JsonPropertyName("status")]
-    public string Status { get; set; } = string.Empty;
-
-    [JsonPropertyName("cancellationReason")]
-    public string? CancellationReason { get; set; }
+    public string status { get; set; } = string.Empty;
+    public string? cancellationReason { get; set; }
 }
 
 public record AssignDriverRequest(
