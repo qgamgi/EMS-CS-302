@@ -90,8 +90,10 @@ builder.Services.AddScoped<IDriverService, DriverService>();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        // Ensure JSON deserialization uses camelCase (matching Flutter's JSON)
-        options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+        // Case-insensitive deserialization so incoming JSON keys match C# props
+        // regardless of casing. We do NOT set PropertyNamingPolicy here because
+        // it would interfere with positional-record serialization — each DTO
+        // that needs camelCase output uses [JsonPropertyName] explicitly.
         options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
     });
 builder.Services.AddEndpointsApiExplorer();

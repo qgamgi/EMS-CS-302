@@ -213,52 +213,56 @@ public class DispatchService : IDispatchService
         return detail;
     }
 
-    private static DispatchSummaryDto ToSummary(Dispatch d) => new(
-        d.Id!,
-        d.PatientName,
-        d.Severity,
-        d.Condition,
-        d.Status.ToString(),
-        d.AssignedDriverId,
-        d.MlPrediction?.HospitalName,
-        d.MlPrediction?.TimeComponents?.TotalTime,
-        d.CreatedAt,
-        d.CancellationReason   // include so dashboard cards show the reason
-    );
+    private static DispatchSummaryDto ToSummary(Dispatch d) => new()
+    {
+        Id               = d.Id!,
+        PatientName      = d.PatientName,
+        Severity         = d.Severity,
+        Condition        = d.Condition,
+        Status           = d.Status.ToString(),
+        AssignedDriverId = d.AssignedDriverId,
+        HospitalName     = d.MlPrediction?.HospitalName,
+        TotalTimeMin     = d.MlPrediction?.TimeComponents?.TotalTime,
+        CreatedAt        = d.CreatedAt,
+        CancellationReason = d.CancellationReason,
+    };
 
-    private static DispatchDetailDto ToDetail(Dispatch d) => new(
-        d.Id!,
-        d.PatientName,
-        new LocationDto(d.Location.Lat, d.Location.Lng, d.Location.Address),
-        d.Severity,
-        d.Condition,
-        d.Status.ToString(),
-        d.AssignedDriverId,
-        d.MlPrediction == null ? null : new MlPredictionDto(
-            d.MlPrediction.HospitalId,
-            d.MlPrediction.HospitalName,
-            d.MlPrediction.HospitalLevel,
-            d.MlPrediction.HospitalCoords == null ? null
-                : new GeoPointDto(d.MlPrediction.HospitalCoords.Lat, d.MlPrediction.HospitalCoords.Lng),
-            d.MlPrediction.DistanceKm,
-            d.MlPrediction.TimeComponents == null ? null
-                : new TimeComponentsDto(
-                    d.MlPrediction.TimeComponents.DispatchTime,
-                    d.MlPrediction.TimeComponents.TimeToPatient,
-                    d.MlPrediction.TimeComponents.OnSceneTime,
-                    d.MlPrediction.TimeComponents.TimeToHospital,
-                    d.MlPrediction.TimeComponents.HandoverTime,
-                    d.MlPrediction.TimeComponents.TotalTime),
-            d.MlPrediction.EmsBaseId,
-            d.MlPrediction.EmsBaseName,
-            d.MlPrediction.IsFallbackCalculation,
-            d.MlPrediction.EmsBaseCoords == null ? null
-                : new GeoPointDto(d.MlPrediction.EmsBaseCoords.Lat, d.MlPrediction.EmsBaseCoords.Lng)
-        ),
-        d.CreatedAt,
-        d.UpdatedAt,
-        d.CompletedAt,
-        d.CancellationReason,
-        d.NumberOfAmbulances
-    );
+    private static DispatchDetailDto ToDetail(Dispatch d) => new()
+    {
+        Id               = d.Id!,
+        PatientName      = d.PatientName,
+        Location         = new LocationDto { Lat = d.Location.Lat, Lng = d.Location.Lng, Address = d.Location.Address },
+        Severity         = d.Severity,
+        Condition        = d.Condition,
+        Status           = d.Status.ToString(),
+        AssignedDriverId = d.AssignedDriverId,
+        MlPrediction     = d.MlPrediction == null ? null : new MlPredictionDto
+        {
+            HospitalId             = d.MlPrediction.HospitalId,
+            HospitalName           = d.MlPrediction.HospitalName,
+            HospitalLevel          = d.MlPrediction.HospitalLevel,
+            HospitalCoords         = d.MlPrediction.HospitalCoords == null ? null
+                                        : new GeoPointDto { Lat = d.MlPrediction.HospitalCoords.Lat, Lng = d.MlPrediction.HospitalCoords.Lng },
+            DistanceKm             = d.MlPrediction.DistanceKm,
+            TimeComponents         = d.MlPrediction.TimeComponents == null ? null : new TimeComponentsDto
+            {
+                DispatchTime   = d.MlPrediction.TimeComponents.DispatchTime,
+                TimeToPatient  = d.MlPrediction.TimeComponents.TimeToPatient,
+                OnSceneTime    = d.MlPrediction.TimeComponents.OnSceneTime,
+                TimeToHospital = d.MlPrediction.TimeComponents.TimeToHospital,
+                HandoverTime   = d.MlPrediction.TimeComponents.HandoverTime,
+                TotalTime      = d.MlPrediction.TimeComponents.TotalTime,
+            },
+            EmsBaseId              = d.MlPrediction.EmsBaseId,
+            EmsBaseName            = d.MlPrediction.EmsBaseName,
+            IsFallbackCalculation  = d.MlPrediction.IsFallbackCalculation,
+            EmsBaseCoords          = d.MlPrediction.EmsBaseCoords == null ? null
+                                        : new GeoPointDto { Lat = d.MlPrediction.EmsBaseCoords.Lat, Lng = d.MlPrediction.EmsBaseCoords.Lng },
+        },
+        CreatedAt          = d.CreatedAt,
+        UpdatedAt          = d.UpdatedAt,
+        CompletedAt        = d.CompletedAt,
+        CancellationReason = d.CancellationReason,
+        NumberOfAmbulances = d.NumberOfAmbulances,
+    };
 }

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using EMS.API.Models;
 
 namespace EMS.API.DTOs;
@@ -12,69 +13,169 @@ public record CreateDispatchRequest(
     int NumberOfAmbulances = 1
 );
 
-// Using a record with explicit JsonPropertyName attributes for reliable binding.
-// Flutter sends: {"status": "Cancelled", "cancellationReason": "reason"}
+// Plain class with explicit [JsonPropertyName] so the deserializer always
+// matches the camelCase keys Flutter sends, regardless of global naming policy.
 public class UpdateDispatchStatusRequest
 {
-    public string status { get; set; } = string.Empty;
-    public string? cancellationReason { get; set; }
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("cancellationReason")]
+    public string? CancellationReason { get; set; }
 }
 
-public record AssignDriverRequest(
-    string DriverId
-);
+public class AssignDriverRequest
+{
+    [JsonPropertyName("driverId")]
+    public string DriverId { get; set; } = string.Empty;
+}
 
-public record DispatchSummaryDto(
-    string Id,
-    string PatientName,
-    string Severity,
-    string Condition,
-    string Status,
-    string? AssignedDriverId,
-    string? HospitalName,
-    double? TotalTimeMin,
-    DateTime CreatedAt,
-    string? CancellationReason = null
-);
+public class DispatchSummaryDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
 
-public record DispatchDetailDto(
-    string Id,
-    string PatientName,
-    LocationDto Location,
-    string Severity,
-    string Condition,
-    string Status,
-    string? AssignedDriverId,
-    MlPredictionDto? MlPrediction,
-    DateTime CreatedAt,
-    DateTime UpdatedAt,
-    DateTime? CompletedAt,
-    string? CancellationReason = null,
-    int NumberOfAmbulances = 1
-);
+    [JsonPropertyName("patientName")]
+    public string PatientName { get; set; } = string.Empty;
 
-public record LocationDto(double Lat, double Lng, string Address);
+    [JsonPropertyName("severity")]
+    public string Severity { get; set; } = string.Empty;
 
-public record MlPredictionDto(
-    int HospitalId,
-    string HospitalName,
-    int? HospitalLevel,
-    GeoPointDto? HospitalCoords,
-    double DistanceKm,
-    TimeComponentsDto? TimeComponents,
-    int EmsBaseId,
-    string EmsBaseName,
-    bool IsFallbackCalculation,
-    GeoPointDto? EmsBaseCoords = null
-);
+    [JsonPropertyName("condition")]
+    public string Condition { get; set; } = string.Empty;
 
-public record GeoPointDto(double Lat, double Lng);
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
 
-public record TimeComponentsDto(
-    double DispatchTime,
-    double TimeToPatient,
-    double OnSceneTime,
-    double TimeToHospital,
-    double HandoverTime,
-    double TotalTime
-);
+    [JsonPropertyName("assignedDriverId")]
+    public string? AssignedDriverId { get; set; }
+
+    [JsonPropertyName("hospitalName")]
+    public string? HospitalName { get; set; }
+
+    [JsonPropertyName("totalTimeMin")]
+    public double? TotalTimeMin { get; set; }
+
+    [JsonPropertyName("createdAt")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("cancellationReason")]
+    public string? CancellationReason { get; set; }
+}
+
+public class DispatchDetailDto
+{
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = string.Empty;
+
+    [JsonPropertyName("patientName")]
+    public string PatientName { get; set; } = string.Empty;
+
+    [JsonPropertyName("location")]
+    public LocationDto Location { get; set; } = new();
+
+    [JsonPropertyName("severity")]
+    public string Severity { get; set; } = string.Empty;
+
+    [JsonPropertyName("condition")]
+    public string Condition { get; set; } = string.Empty;
+
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("assignedDriverId")]
+    public string? AssignedDriverId { get; set; }
+
+    [JsonPropertyName("mlPrediction")]
+    public MlPredictionDto? MlPrediction { get; set; }
+
+    [JsonPropertyName("createdAt")]
+    public DateTime CreatedAt { get; set; }
+
+    [JsonPropertyName("updatedAt")]
+    public DateTime UpdatedAt { get; set; }
+
+    [JsonPropertyName("completedAt")]
+    public DateTime? CompletedAt { get; set; }
+
+    [JsonPropertyName("cancellationReason")]
+    public string? CancellationReason { get; set; }
+
+    [JsonPropertyName("numberOfAmbulances")]
+    public int NumberOfAmbulances { get; set; } = 1;
+}
+
+public class LocationDto
+{
+    [JsonPropertyName("lat")]
+    public double Lat { get; set; }
+
+    [JsonPropertyName("lng")]
+    public double Lng { get; set; }
+
+    [JsonPropertyName("address")]
+    public string Address { get; set; } = string.Empty;
+}
+
+public class MlPredictionDto
+{
+    [JsonPropertyName("hospitalId")]
+    public int HospitalId { get; set; }
+
+    [JsonPropertyName("hospitalName")]
+    public string HospitalName { get; set; } = string.Empty;
+
+    [JsonPropertyName("hospitalLevel")]
+    public int? HospitalLevel { get; set; }
+
+    [JsonPropertyName("hospitalCoords")]
+    public GeoPointDto? HospitalCoords { get; set; }
+
+    [JsonPropertyName("distanceKm")]
+    public double DistanceKm { get; set; }
+
+    [JsonPropertyName("timeComponents")]
+    public TimeComponentsDto? TimeComponents { get; set; }
+
+    [JsonPropertyName("emsBaseId")]
+    public int EmsBaseId { get; set; }
+
+    [JsonPropertyName("emsBaseName")]
+    public string EmsBaseName { get; set; } = string.Empty;
+
+    [JsonPropertyName("isFallbackCalculation")]
+    public bool IsFallbackCalculation { get; set; }
+
+    [JsonPropertyName("emsBaseCoords")]
+    public GeoPointDto? EmsBaseCoords { get; set; }
+}
+
+public class GeoPointDto
+{
+    [JsonPropertyName("lat")]
+    public double Lat { get; set; }
+
+    [JsonPropertyName("lng")]
+    public double Lng { get; set; }
+}
+
+public class TimeComponentsDto
+{
+    [JsonPropertyName("dispatchTime")]
+    public double DispatchTime { get; set; }
+
+    [JsonPropertyName("timeToPatient")]
+    public double TimeToPatient { get; set; }
+
+    [JsonPropertyName("onSceneTime")]
+    public double OnSceneTime { get; set; }
+
+    [JsonPropertyName("timeToHospital")]
+    public double TimeToHospital { get; set; }
+
+    [JsonPropertyName("handoverTime")]
+    public double HandoverTime { get; set; }
+
+    [JsonPropertyName("totalTime")]
+    public double TotalTime { get; set; }
+}

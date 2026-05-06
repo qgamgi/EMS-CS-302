@@ -71,7 +71,7 @@ public class DispatchController : ControllerBase
         try
         {
             var dispatch = await _dispatchService.UpdateStatusAsync(
-                id, request.status, request.cancellationReason);
+                id, request.Status, request.CancellationReason);
             if (dispatch == null) return NotFound();
             return Ok(dispatch);
         }
