@@ -153,6 +153,7 @@ public class DispatchService : IDispatchService
         if (parsed == DispatchStatus.Cancelled)
         {
             var reason = string.IsNullOrWhiteSpace(cancellationReason) ? null : cancellationReason.Trim();
+            Console.WriteLine($"[v0] DispatchService.UpdateStatusAsync: Setting CancellationReason to '{reason ?? "(NULL)"}'");
             update = update.Set(d => d.CancellationReason, reason);
         }
 

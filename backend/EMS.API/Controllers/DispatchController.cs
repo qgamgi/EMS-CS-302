@@ -68,6 +68,13 @@ public class DispatchController : ControllerBase
     [Authorize(Roles = "Driver,EmsOperator,Dispatcher,Admin")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateDispatchStatusRequest request)
     {
+        // Debug: Log incoming request data with more detail
+        Console.WriteLine($"[v0] UpdateStatus called:");
+        Console.WriteLine($"[v0]   id={id}");
+        Console.WriteLine($"[v0]   request.Status='{request.Status}'");
+        Console.WriteLine($"[v0]   request.CancellationReason='{request.CancellationReason ?? "(NULL)"}'");
+        Console.WriteLine($"[v0]   request type={request.GetType().FullName}");
+        
         try
         {
             var dispatch = await _dispatchService.UpdateStatusAsync(
