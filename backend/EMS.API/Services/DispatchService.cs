@@ -222,7 +222,8 @@ public class DispatchService : IDispatchService
         d.AssignedDriverId,
         d.MlPrediction?.HospitalName,
         d.MlPrediction?.TimeComponents?.TotalTime,
-        d.CreatedAt
+        d.CreatedAt,
+        d.CancellationReason   // include so dashboard cards show the reason
     );
 
     private static DispatchDetailDto ToDetail(Dispatch d) => new(

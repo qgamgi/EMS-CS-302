@@ -33,7 +33,8 @@ public record DispatchSummaryDto(
     string? AssignedDriverId,
     string? HospitalName,
     double? TotalTimeMin,
-    DateTime CreatedAt
+    DateTime CreatedAt,
+    string? CancellationReason = null
 );
 
 public record DispatchDetailDto(
