@@ -149,8 +149,12 @@ public class DispatchService : IDispatchService
         if (parsed == DispatchStatus.Completed)
             update = update.Set(d => d.CompletedAt, DateTime.UtcNow);
 
-        if (parsed == DispatchStatus.Cancelled && cancellationReason != null)
-            update = update.Set(d => d.CancellationReason, cancellationReason);
+        // Always set cancellation reason when cancelling (even if null/empty for clarity)
+        if (parsed == DispatchStatus.Cancelled)
+        {
+            var reason = string.IsNullOrWhiteSpace(cancellationReason) ? null : cancellationReason.Trim();
+            update = update.Set(d => d.CancellationReason, reason);
+        }
 
         await _dispatches.UpdateOneAsync(d => d.Id == id, update);
 

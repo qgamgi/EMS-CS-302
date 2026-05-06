@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using EMS.API.Models;
 
 namespace EMS.API.DTOs;
@@ -12,10 +13,14 @@ public record CreateDispatchRequest(
     int NumberOfAmbulances = 1
 );
 
-public record UpdateDispatchStatusRequest(
-    string Status,
-    string? CancellationReason = null
-);
+public class UpdateDispatchStatusRequest
+{
+    [JsonPropertyName("status")]
+    public string Status { get; set; } = string.Empty;
+
+    [JsonPropertyName("cancellationReason")]
+    public string? CancellationReason { get; set; }
+}
 
 public record AssignDriverRequest(
     string DriverId
