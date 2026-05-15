@@ -5,6 +5,7 @@ namespace EMS.API.DTOs;
 
 public record CreateDispatchRequest(
     string PatientName,
+    int? PatientAge,
     double Latitude,
     double Longitude,
     string Address,
@@ -38,6 +39,9 @@ public class DispatchSummaryDto
     [JsonPropertyName("patientName")]
     public string PatientName { get; set; } = string.Empty;
 
+    [JsonPropertyName("patientAge")]
+    public int? PatientAge { get; set; }
+
     [JsonPropertyName("severity")]
     public string Severity { get; set; } = string.Empty;
 
@@ -49,6 +53,9 @@ public class DispatchSummaryDto
 
     [JsonPropertyName("assignedDriverId")]
     public string? AssignedDriverId { get; set; }
+
+    [JsonPropertyName("assignedDriverIds")]
+    public List<string> AssignedDriverIds { get; set; } = new();
 
     [JsonPropertyName("hospitalName")]
     public string? HospitalName { get; set; }
@@ -71,6 +78,9 @@ public class DispatchDetailDto
     [JsonPropertyName("patientName")]
     public string PatientName { get; set; } = string.Empty;
 
+    [JsonPropertyName("patientAge")]
+    public int? PatientAge { get; set; }
+
     [JsonPropertyName("location")]
     public LocationDto Location { get; set; } = new();
 
@@ -85,6 +95,9 @@ public class DispatchDetailDto
 
     [JsonPropertyName("assignedDriverId")]
     public string? AssignedDriverId { get; set; }
+
+    [JsonPropertyName("assignedDriverIds")]
+    public List<string> AssignedDriverIds { get; set; } = new();
 
     [JsonPropertyName("mlPrediction")]
     public MlPredictionDto? MlPrediction { get; set; }

@@ -5,7 +5,8 @@ namespace EMS.API.Models;
 
 public enum DispatchStatus
 {
-    Pending,
+    Unassigned,
+    Pending,        // kept for backward-compat with existing DB records
     Assigned,
     EnRoute,
     OnScene,
@@ -102,6 +103,9 @@ public class Dispatch
     [BsonElement("patientName")]
     public string PatientName { get; set; } = string.Empty;
 
+    [BsonElement("patientAge")]
+    public int? PatientAge { get; set; }
+
     [BsonElement("location")]
     public PatientLocation Location { get; set; } = new();
 
@@ -118,6 +122,10 @@ public class Dispatch
     [BsonElement("assignedDriverId")]
     [BsonRepresentation(BsonType.ObjectId)]
     public string? AssignedDriverId { get; set; }
+
+    /// <summary>All driver userIds assigned to this dispatch (multi-driver support).</summary>
+    [BsonElement("assignedDriverIds")]
+    public List<string> AssignedDriverIds { get; set; } = new();
 
     [BsonElement("assignedEmsBaseId")]
     public int? AssignedEmsBaseId { get; set; }

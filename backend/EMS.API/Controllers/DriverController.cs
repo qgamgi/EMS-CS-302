@@ -40,4 +40,27 @@ public class DriverController : ControllerBase
         if (result == null) return NotFound(new { message = "Driver profile not found for this user." });
         return Ok(result);
     }
+
+    /// <summary>
+    /// Set / clear a driver's availability for the day (Dispatcher or Admin).
+    /// Pass unavailableUntil = null to restore the driver to Available.
+    /// </summary>
+    [HttpPatch("{id}/availability")]
+    [Authorize(Roles = "Admin,Dispatcher")]
+    public async Task<IActionResult> SetAvailability(string id, [FromBody] SetDriverAvailabilityRequest request)
+    {
+        var result = await _driverService.SetAvailabilityAsync(id, request.UnavailableUntil, request.UnavailabilityReason);
+        if (result == null) return NotFound(new { message = "Driver not found." });
+        return Ok(result);
+    }
+
+    /// <summary>Set driver role type: Driver | Paramedic | EMT (Dispatcher or Admin).</summary>
+    [HttpPatch("{id}/role-type")]
+    [Authorize(Roles = "Admin,Dispatcher")]
+    public async Task<IActionResult> SetRoleType(string id, [FromBody] SetDriverRoleTypeRequest request)
+    {
+        var result = await _driverService.SetRoleTypeAsync(id, request.RoleType);
+        if (result == null) return NotFound(new { message = "Driver not found." });
+        return Ok(result);
+    }
 }

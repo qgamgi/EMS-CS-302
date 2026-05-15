@@ -34,6 +34,21 @@ public class Driver
     [BsonRepresentation(BsonType.ObjectId)]
     public string? ActiveDispatchId { get; set; }
 
+    /// <summary>
+    /// When set to a future date, the driver is marked unavailable for that day.
+    /// Null = no manual override (status is derived from DriverStatus).
+    /// </summary>
+    [BsonElement("unavailableUntil")]
+    public DateTime? UnavailableUntil { get; set; }
+
+    /// <summary>Free-text reason for unavailability (e.g. "Day Off", "On Leave").</summary>
+    [BsonElement("unavailabilityReason")]
+    public string? UnavailabilityReason { get; set; }
+
+    /// <summary>Role of the driver: Driver, Paramedic, EMT.</summary>
+    [BsonElement("roleType")]
+    public string RoleType { get; set; } = "Driver";
+
     [BsonElement("updatedAt")]
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

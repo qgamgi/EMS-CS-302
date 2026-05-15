@@ -9,7 +9,9 @@ namespace EMS.API.Services;
 public interface IDriverService
 {
     Task<List<DriverDto>> GetAllAsync();
-    Task<DriverDto?> UpdateLocationAsync(string driverId, double lat, double lng);
+    Task<DriverDto?> UpdateLocationAsync(string userId, double lat, double lng);
+    Task<DriverDto?> SetAvailabilityAsync(string driverId, DateTime? unavailableUntil, string? reason);
+    Task<DriverDto?> SetRoleTypeAsync(string driverId, string roleType);
 }
 
 public class DriverService : IDriverService
@@ -43,7 +45,10 @@ public class DriverService : IDriverService
                 d.CurrentLocation?.Lat,
                 d.CurrentLocation?.Lng,
                 d.Status.ToString(),
-                d.ActiveDispatchId
+                d.ActiveDispatchId,
+                d.UnavailableUntil,
+                d.UnavailabilityReason,
+                d.RoleType
             );
         }).ToList();
     }
@@ -64,12 +69,60 @@ public class DriverService : IDriverService
         var dto = new DriverDto(
             driver.Id!, driver.UserId, user?.FullName ?? "Unknown",
             driver.VehicleId, lat, lng,
-            driver.Status.ToString(), driver.ActiveDispatchId
+            driver.Status.ToString(), driver.ActiveDispatchId,
+            driver.UnavailableUntil, driver.UnavailabilityReason, driver.RoleType
         );
 
         await _hub.Clients.Groups("Dispatcher", "EmsOperator")
             .SendAsync("DriverLocationUpdated", dto);
 
         return dto;
+    }
+
+    public async Task<DriverDto?> SetAvailabilityAsync(string driverId, DateTime? unavailableUntil, string? reason)
+    {
+        var update = Builders<Driver>.Update
+            .Set(d => d.UnavailableUntil, unavailableUntil)
+            .Set(d => d.UnavailabilityReason, reason)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+        // If clearing unavailability, restore status to Available if currently Offline due to manual override
+        if (unavailableUntil == null)
+            update = update.Set(d => d.Status, DriverStatus.Available);
+        else
+            update = update.Set(d => d.Status, DriverStatus.Offline);
+
+        await _drivers.UpdateOneAsync(d => d.Id == driverId, update);
+
+        var driver = await _drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return null;
+
+        var user = await _users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
+        return new DriverDto(
+            driver.Id!, driver.UserId, user?.FullName ?? "Unknown",
+            driver.VehicleId, driver.CurrentLocation?.Lat, driver.CurrentLocation?.Lng,
+            driver.Status.ToString(), driver.ActiveDispatchId,
+            driver.UnavailableUntil, driver.UnavailabilityReason, driver.RoleType
+        );
+    }
+
+    public async Task<DriverDto?> SetRoleTypeAsync(string driverId, string roleType)
+    {
+        var update = Builders<Driver>.Update
+            .Set(d => d.RoleType, roleType)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+        await _drivers.UpdateOneAsync(d => d.Id == driverId, update);
+
+        var driver = await _drivers.Find(d => d.Id == driverId).FirstOrDefaultAsync();
+        if (driver == null) return null;
+
+        var user = await _users.Find(u => u.Id == driver.UserId).FirstOrDefaultAsync();
+        return new DriverDto(
+            driver.Id!, driver.UserId, user?.FullName ?? "Unknown",
+            driver.VehicleId, driver.CurrentLocation?.Lat, driver.CurrentLocation?.Lng,
+            driver.Status.ToString(), driver.ActiveDispatchId,
+            driver.UnavailableUntil, driver.UnavailabilityReason, driver.RoleType
+        );
     }
 }

@@ -83,6 +83,14 @@ public class AuthService : IAuthService
         if (!Enum.TryParse<UserRole>(request.Role, out var role))
             throw new ArgumentException($"Invalid role: {request.Role}");
 
+        // Password strength: min 8 chars, at least 1 uppercase, at least 1 special character
+        if (request.Password.Length < 8)
+            throw new ArgumentException("Password must be at least 8 characters.");
+        if (!request.Password.Any(char.IsUpper))
+            throw new ArgumentException("Password must contain at least one uppercase letter.");
+        if (!request.Password.Any(c => !char.IsLetterOrDigit(c)))
+            throw new ArgumentException("Password must contain at least one special character (e.g. @, #, !, $).");
+
         var existing = await _users.Find(u => u.Email == request.Email).FirstOrDefaultAsync();
         if (existing != null)
             throw new InvalidOperationException("Email already registered.");

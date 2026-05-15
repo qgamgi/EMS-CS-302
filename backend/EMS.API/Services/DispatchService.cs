@@ -60,8 +60,10 @@ public class DispatchService : IDispatchService
             DispatchStatus.Transporting,
         };
 
+        // Match on primary field OR the multi-driver list so all assigned drivers see it
         var dispatch = await _dispatches
-            .Find(d => d.AssignedDriverId == userId && activeStatuses.Contains(d.Status))
+            .Find(d => (d.AssignedDriverId == userId || d.AssignedDriverIds.Contains(userId))
+                       && activeStatuses.Contains(d.Status))
             .SortByDescending(d => d.UpdatedAt)
             .FirstOrDefaultAsync();
 
@@ -87,6 +89,7 @@ public class DispatchService : IDispatchService
         {
             CallerId = callerId,
             PatientName = request.PatientName,
+            PatientAge = request.PatientAge,
             Location = new PatientLocation
             {
                 Lat = request.Latitude,
@@ -96,7 +99,7 @@ public class DispatchService : IDispatchService
             Severity = request.Severity,
             Condition = request.Condition,
             NumberOfAmbulances = request.NumberOfAmbulances,
-            Status = DispatchStatus.Pending,
+            Status = DispatchStatus.Unassigned,
             MlPrediction = mlResult == null ? null : new MlPrediction
             {
                 HospitalId = mlResult.HospitalId,
@@ -187,10 +190,22 @@ public class DispatchService : IDispatchService
 
         var userIdToStore = driver.UserId;
 
+        // Add driver userId to both the primary field (first driver) and the list (all drivers).
+        // AddToSet prevents duplicate entries in assignedDriverIds.
+        var existingDispatch = await _dispatches.Find(d => d.Id == id).FirstOrDefaultAsync();
+        if (existingDispatch == null) return null;
+
+        var isFirstDriver = string.IsNullOrEmpty(existingDispatch.AssignedDriverId)
+                            || existingDispatch.AssignedDriverIds.Count == 0;
+
         var update = Builders<Dispatch>.Update
-            .Set(d => d.AssignedDriverId, userIdToStore)
             .Set(d => d.Status, DispatchStatus.Assigned)
-            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+            .Set(d => d.UpdatedAt, DateTime.UtcNow)
+            .AddToSet(d => d.AssignedDriverIds, userIdToStore);
+
+        // Only set the primary assignedDriverId for the first driver assigned
+        if (isFirstDriver)
+            update = update.Set(d => d.AssignedDriverId, userIdToStore);
 
         await _dispatches.UpdateOneAsync(d => d.Id == id, update);
 
@@ -205,8 +220,10 @@ public class DispatchService : IDispatchService
 
         var detail = ToDetail(dispatch);
 
-        await _hub.Clients.Group($"Driver_{userIdToStore}")
-            .SendAsync("DriverAssigned", detail);
+        // Notify ALL assigned drivers
+        foreach (var uid in dispatch.AssignedDriverIds)
+            await _hub.Clients.Group($"Driver_{uid}").SendAsync("DriverAssigned", detail);
+
         await _hub.Clients.Groups("Dispatcher", "EmsOperator")
             .SendAsync("DispatchStatusUpdated", detail);
 
@@ -215,27 +232,31 @@ public class DispatchService : IDispatchService
 
     private static DispatchSummaryDto ToSummary(Dispatch d) => new()
     {
-        Id               = d.Id!,
-        PatientName      = d.PatientName,
-        Severity         = d.Severity,
-        Condition        = d.Condition,
-        Status           = d.Status.ToString(),
-        AssignedDriverId = d.AssignedDriverId,
-        HospitalName     = d.MlPrediction?.HospitalName,
-        TotalTimeMin     = d.MlPrediction?.TimeComponents?.TotalTime,
-        CreatedAt        = d.CreatedAt,
+        Id                 = d.Id!,
+        PatientName        = d.PatientName,
+        PatientAge         = d.PatientAge,
+        Severity           = d.Severity,
+        Condition          = d.Condition,
+        Status             = d.Status.ToString(),
+        AssignedDriverId   = d.AssignedDriverId,
+        AssignedDriverIds  = d.AssignedDriverIds,
+        HospitalName       = d.MlPrediction?.HospitalName,
+        TotalTimeMin       = d.MlPrediction?.TimeComponents?.TotalTime,
+        CreatedAt          = d.CreatedAt,
         CancellationReason = d.CancellationReason,
     };
 
     private static DispatchDetailDto ToDetail(Dispatch d) => new()
     {
-        Id               = d.Id!,
-        PatientName      = d.PatientName,
-        Location         = new LocationDto { Lat = d.Location.Lat, Lng = d.Location.Lng, Address = d.Location.Address },
-        Severity         = d.Severity,
-        Condition        = d.Condition,
-        Status           = d.Status.ToString(),
-        AssignedDriverId = d.AssignedDriverId,
+        Id                = d.Id!,
+        PatientName       = d.PatientName,
+        PatientAge        = d.PatientAge,
+        Location          = new LocationDto { Lat = d.Location.Lat, Lng = d.Location.Lng, Address = d.Location.Address },
+        Severity          = d.Severity,
+        Condition         = d.Condition,
+        Status            = d.Status.ToString(),
+        AssignedDriverId  = d.AssignedDriverId,
+        AssignedDriverIds = d.AssignedDriverIds,
         MlPrediction     = d.MlPrediction == null ? null : new MlPredictionDto
         {
             HospitalId             = d.MlPrediction.HospitalId,
