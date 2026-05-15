@@ -148,6 +148,14 @@ public class Dispatch
     [BsonElement("numberOfAmbulances")]
     public int NumberOfAmbulances { get; set; } = 1;
 
+    /// <summary>Names of paramedics assigned to this dispatch.</summary>
+    [BsonElement("paramedics")]
+    public List<string> Paramedics { get; set; } = new();
+
+    /// <summary>Names of EMT personnel assigned to this dispatch.</summary>
+    [BsonElement("emts")]
+    public List<string> Emts { get; set; } = new();
+
     /// <summary>
     /// Tracks per-driver completion. Key = driver userId, Value = true when
     /// that driver has marked their part done. The overall dispatch only moves

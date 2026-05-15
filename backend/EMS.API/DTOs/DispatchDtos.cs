@@ -11,7 +11,9 @@ public record CreateDispatchRequest(
     string Address,
     string Severity,
     string Condition,
-    int NumberOfAmbulances = 1
+    int NumberOfAmbulances = 1,
+    List<string>? Paramedics = null,
+    List<string>? Emts = null
 );
 
 // Plain class with explicit [JsonPropertyName] so the deserializer always
@@ -80,6 +82,12 @@ public class DispatchSummaryDto
 
     [JsonPropertyName("driverCompletions")]
     public Dictionary<string, bool> DriverCompletions { get; set; } = new();
+
+    [JsonPropertyName("paramedics")]
+    public List<string> Paramedics { get; set; } = new();
+
+    [JsonPropertyName("emts")]
+    public List<string> Emts { get; set; } = new();
 }
 
 public class DispatchDetailDto
@@ -131,6 +139,12 @@ public class DispatchDetailDto
 
     [JsonPropertyName("driverCompletions")]
     public Dictionary<string, bool> DriverCompletions { get; set; } = new();
+
+    [JsonPropertyName("paramedics")]
+    public List<string> Paramedics { get; set; } = new();
+
+    [JsonPropertyName("emts")]
+    public List<string> Emts { get; set; } = new();
 }
 
 public class LocationDto

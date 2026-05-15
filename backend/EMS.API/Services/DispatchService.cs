@@ -105,6 +105,8 @@ public class DispatchService : IDispatchService
             Severity = request.Severity,
             Condition = request.Condition,
             NumberOfAmbulances = request.NumberOfAmbulances,
+            Paramedics = request.Paramedics ?? new List<string>(),
+            Emts       = request.Emts       ?? new List<string>(),
             Status = DispatchStatus.Unassigned,
             MlPrediction = mlResult == null ? null : new MlPrediction
             {
@@ -251,6 +253,8 @@ public class DispatchService : IDispatchService
         CreatedAt          = d.CreatedAt,
         CancellationReason = d.CancellationReason,
         DriverCompletions  = d.DriverCompletions,
+        Paramedics         = d.Paramedics,
+        Emts               = d.Emts,
     };
 
     private static DispatchDetailDto ToDetail(Dispatch d) => new()
@@ -293,6 +297,8 @@ public class DispatchService : IDispatchService
         CancellationReason = d.CancellationReason,
         NumberOfAmbulances = d.NumberOfAmbulances,
         DriverCompletions  = d.DriverCompletions,
+        Paramedics         = d.Paramedics,
+        Emts               = d.Emts,
     };
 
     // ── Per-driver completion ─────────────────────────────────────────────
