@@ -147,4 +147,12 @@ public class Dispatch
 
     [BsonElement("numberOfAmbulances")]
     public int NumberOfAmbulances { get; set; } = 1;
+
+    /// <summary>
+    /// Tracks per-driver completion. Key = driver userId, Value = true when
+    /// that driver has marked their part done. The overall dispatch only moves
+    /// to Completed once every entry in AssignedDriverIds has an entry here.
+    /// </summary>
+    [BsonElement("driverCompletions")]
+    public Dictionary<string, bool> DriverCompletions { get; set; } = new();
 }

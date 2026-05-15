@@ -31,6 +31,15 @@ public class AssignDriverRequest
     public string DriverId { get; set; } = string.Empty;
 }
 
+/// <summary>
+/// Sent by a driver when they mark their own part of a dispatch as complete.
+/// The driverId (userId) comes from the JWT, not the body.
+/// </summary>
+public class CompleteDriverRequest
+{
+    // intentionally empty — driverId is extracted from the JWT claim
+}
+
 public class DispatchSummaryDto
 {
     [JsonPropertyName("id")]
@@ -68,6 +77,9 @@ public class DispatchSummaryDto
 
     [JsonPropertyName("cancellationReason")]
     public string? CancellationReason { get; set; }
+
+    [JsonPropertyName("driverCompletions")]
+    public Dictionary<string, bool> DriverCompletions { get; set; } = new();
 }
 
 public class DispatchDetailDto
@@ -116,6 +128,9 @@ public class DispatchDetailDto
 
     [JsonPropertyName("numberOfAmbulances")]
     public int NumberOfAmbulances { get; set; } = 1;
+
+    [JsonPropertyName("driverCompletions")]
+    public Dictionary<string, bool> DriverCompletions { get; set; } = new();
 }
 
 public class LocationDto

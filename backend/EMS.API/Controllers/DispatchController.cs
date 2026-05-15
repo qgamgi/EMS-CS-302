@@ -63,11 +63,27 @@ public class DispatchController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = dispatch.Id }, dispatch);
     }
 
-    /// <summary>Update dispatch status (Driver, EmsOperator).</summary>
+    /// <summary>
+    /// Update dispatch status — for non-Completed transitions (EnRoute, OnScene,
+    /// Transporting, Cancelled).  Drivers must use POST /{id}/complete to record
+    /// their individual completion; pushing "Completed" via this endpoint is
+    /// blocked for the Driver role to prevent one driver completing for everyone.
+    /// </summary>
     [HttpPatch("{id}/status")]
     [Authorize(Roles = "Driver,EmsOperator,Dispatcher,Admin")]
     public async Task<IActionResult> UpdateStatus(string id, [FromBody] UpdateDispatchStatusRequest request)
     {
+        // Drivers cannot force the overall status to Completed — they must use /complete
+        var callerRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+        if (callerRole == "Driver" &&
+            string.Equals(request.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new
+            {
+                message = "Drivers must use the /complete endpoint to mark their part done."
+            });
+        }
+
         try
         {
             var dispatch = await _dispatchService.UpdateStatusAsync(
@@ -79,6 +95,26 @@ public class DispatchController : ControllerBase
         {
             return BadRequest(new { message = ex.Message });
         }
+    }
+
+    /// <summary>
+    /// Called by a driver to mark their own part of a multi-driver dispatch as
+    /// complete.  The dispatch only transitions to Completed once every assigned
+    /// driver has called this endpoint.
+    /// </summary>
+    [HttpPost("{id}/complete")]
+    [Authorize(Roles = "Driver")]
+    public async Task<IActionResult> CompleteDriver(string id)
+    {
+        var driverUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(driverUserId))
+            return Unauthorized(new { message = "Invalid token." });
+
+        var (dto, allDone) = await _dispatchService.CompleteDriverAsync(id, driverUserId);
+        if (dto == null)
+            return NotFound(new { message = "Dispatch not found or you are not assigned to it." });
+
+        return Ok(new { dispatch = dto, allCompleted = allDone });
     }
 
     /// <summary>Assign a driver to a dispatch (Dispatcher).</summary>

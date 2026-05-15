@@ -14,6 +14,12 @@ public interface IDispatchService
     Task<DispatchDetailDto> CreateAsync(CreateDispatchRequest request, string callerId);
     Task<DispatchDetailDto?> UpdateStatusAsync(string id, string status, string? cancellationReason = null);
     Task<DispatchDetailDto?> AssignDriverAsync(string id, string driverId);
+    /// <summary>
+    /// Records that one driver (identified by their userId) has finished their
+    /// part of the dispatch.  The dispatch only moves to Completed once every
+    /// assigned driver has called this.
+    /// </summary>
+    Task<(DispatchDetailDto? dto, bool allDone)> CompleteDriverAsync(string dispatchId, string driverUserId);
 }
 
 public class DispatchService : IDispatchService
@@ -244,6 +250,7 @@ public class DispatchService : IDispatchService
         TotalTimeMin       = d.MlPrediction?.TimeComponents?.TotalTime,
         CreatedAt          = d.CreatedAt,
         CancellationReason = d.CancellationReason,
+        DriverCompletions  = d.DriverCompletions,
     };
 
     private static DispatchDetailDto ToDetail(Dispatch d) => new()
@@ -285,5 +292,78 @@ public class DispatchService : IDispatchService
         CompletedAt        = d.CompletedAt,
         CancellationReason = d.CancellationReason,
         NumberOfAmbulances = d.NumberOfAmbulances,
+        DriverCompletions  = d.DriverCompletions,
     };
+
+    // ── Per-driver completion ─────────────────────────────────────────────
+    public async Task<(DispatchDetailDto? dto, bool allDone)> CompleteDriverAsync(
+        string dispatchId, string driverUserId)
+    {
+        var dispatch = await _dispatches.Find(d => d.Id == dispatchId).FirstOrDefaultAsync();
+        if (dispatch == null) return (null, false);
+
+        // Verify this driver is actually assigned
+        var isAssigned = dispatch.AssignedDriverId == driverUserId
+                         || dispatch.AssignedDriverIds.Contains(driverUserId);
+        if (!isAssigned) return (null, false);
+
+        // Mark this driver as done (idempotent — no-op if already done)
+        dispatch.DriverCompletions[driverUserId] = true;
+
+        // Check if every assigned driver has now completed
+        var allDriversDone = dispatch.AssignedDriverIds.Count > 0
+            && dispatch.AssignedDriverIds.All(uid => dispatch.DriverCompletions.ContainsKey(uid)
+                                                     && dispatch.DriverCompletions[uid]);
+
+        // Also handle legacy dispatches that only have AssignedDriverId (no list)
+        if (!allDriversDone
+            && dispatch.AssignedDriverIds.Count == 0
+            && !string.IsNullOrEmpty(dispatch.AssignedDriverId))
+        {
+            allDriversDone = dispatch.DriverCompletions.ContainsKey(dispatch.AssignedDriverId)
+                             && dispatch.DriverCompletions[dispatch.AssignedDriverId];
+        }
+
+        // Build MongoDB update
+        var updateDef = Builders<Dispatch>.Update
+            .Set($"driverCompletions.{driverUserId}", true)
+            .Set(d => d.UpdatedAt, DateTime.UtcNow);
+
+        if (allDriversDone)
+        {
+            updateDef = updateDef
+                .Set(d => d.Status, DispatchStatus.Completed)
+                .Set(d => d.CompletedAt, DateTime.UtcNow);
+        }
+
+        await _dispatches.UpdateOneAsync(d => d.Id == dispatchId, updateDef);
+
+        // Release THIS driver back to Available regardless of overall status
+        var driverUpdateDef = Builders<Driver>.Update
+            .Set(dr => dr.Status, DriverStatus.Available)
+            .Set(dr => dr.ActiveDispatchId, (string?)null)
+            .Set(dr => dr.UpdatedAt, DateTime.UtcNow);
+        await _drivers.UpdateOneAsync(dr => dr.UserId == driverUserId, driverUpdateDef);
+
+        // If all done, also release any remaining drivers in case of data inconsistency
+        if (allDriversDone)
+        {
+            foreach (var uid in dispatch.AssignedDriverIds.Where(uid => uid != driverUserId))
+            {
+                await _drivers.UpdateOneAsync(
+                    dr => dr.UserId == uid,
+                    driverUpdateDef);
+            }
+        }
+
+        var updated = await _dispatches.Find(d => d.Id == dispatchId).FirstOrDefaultAsync();
+        if (updated == null) return (null, allDriversDone);
+
+        var detail = ToDetail(updated);
+
+        // Broadcast to all parties
+        await _hub.Clients.All.SendAsync("DispatchStatusUpdated", detail);
+
+        return (detail, allDriversDone);
+    }
 }
